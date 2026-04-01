@@ -4,7 +4,7 @@ set -euo pipefail
 # Conduit Caster Install Script
 # Usage: curl -fsSL https://raw.githubusercontent.com/org/conduit-caster/main/install.sh | bash
 
-REPO="org/conduit-caster"
+REPO="robword/conduit-caster"
 DEFAULT_INSTALL_DIR="$HOME/conduit-caster"
 INSTALL_DIR=""
 VERSION=""
@@ -205,16 +205,36 @@ if [[ "$DEV_MODE" == true ]]; then
     info "Repository cloned to $INSTALL_DIR"
   fi
 else
-  echo "Downloading release..."
+  # Try release tarball first, fall back to git clone
   if [[ -z "$VERSION" ]]; then
-    VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/')
+    VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/' || true)
   fi
 
-  TARBALL_URL="https://github.com/$REPO/releases/download/v${VERSION}/conduit-caster-${VERSION}.tar.gz"
+  FETCHED=false
+  if [[ -n "$VERSION" ]]; then
+    echo "Downloading release v${VERSION}..."
+    TARBALL_URL="https://github.com/$REPO/releases/download/v${VERSION}/conduit-caster-${VERSION}.tar.gz"
+    mkdir -p "$INSTALL_DIR"
+    if curl -fsSL "$TARBALL_URL" | tar xz -C "$INSTALL_DIR" --strip-components=1 2>/dev/null; then
+      info "Downloaded v${VERSION} to $INSTALL_DIR"
+      FETCHED=true
+    else
+      warn "Release tarball not found"
+    fi
+  fi
 
-  mkdir -p "$INSTALL_DIR"
-  curl -fsSL "$TARBALL_URL" | tar xz -C "$INSTALL_DIR" --strip-components=1
-  info "Downloaded v${VERSION} to $INSTALL_DIR"
+  if [[ "$FETCHED" == false ]]; then
+    echo "No release available — cloning repository instead..."
+    if [[ -d "$INSTALL_DIR/.git" ]]; then
+      cd "$INSTALL_DIR"
+      git pull
+      info "Repository updated"
+    else
+      git clone "https://github.com/$REPO" "$INSTALL_DIR"
+      info "Repository cloned to $INSTALL_DIR"
+    fi
+    DEV_MODE=true  # Need to build locally since there's no pre-built image
+  fi
 fi
 
 cd "$INSTALL_DIR"
