@@ -91,7 +91,7 @@ hlsSegmentCount: 3
 hlsSegmentDuration: 1s
 
 paths:
-  ${cfg.rtmpPath}:
+  ~^${cfg.rtmpPath}:
     runOnReady: >
       curl -sf -X POST http://backend:3000/api/webhook/stream
       -H 'Content-Type: application/json'
