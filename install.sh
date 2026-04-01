@@ -215,12 +215,16 @@ else
   if [[ -z "$VERSION" ]]; then
     RELEASE_JSON=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null || true)
     if echo "$RELEASE_JSON" | grep -q '"tag_name"'; then
-      VERSION=$(echo "$RELEASE_JSON" | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"v?([^"]+)".*/\1/')
+      PARSED_TAG=$(echo "$RELEASE_JSON" | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"v?([^"]+)".*/\1/')
+      # Only accept clean semver (e.g., 1.0.0)
+      if [[ "$PARSED_TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        VERSION="$PARSED_TAG"
+      fi
     fi
   fi
 
   FETCHED=false
-  if [[ -n "$VERSION" && "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+  if [[ -n "$VERSION" && "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     echo "Downloading release v${VERSION}..."
     TARBALL_URL="https://github.com/$REPO/releases/download/v${VERSION}/conduit-caster-${VERSION}.tar.gz"
     mkdir -p "$INSTALL_DIR"
