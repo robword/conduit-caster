@@ -8,6 +8,7 @@ let startedAt = null;
 let gapTimer = null;
 let gapInterval = null;
 let gapStartedAt = null;
+let pollTimer = null;
 
 // Callbacks wired by index.js
 let onStreamStart = null;
@@ -16,6 +17,46 @@ let onStreamStop = null;
 export function setCallbacks({ onStart, onStop }) {
   onStreamStart = onStart;
   onStreamStop = onStop;
+}
+
+// Poll MediaMTX API for active streams (since the scratch image has no curl for webhooks)
+export function startPolling() {
+  const MEDIAMTX_API = process.env.MEDIAMTX_API_URL || 'http://mediamtx:9997';
+  const POLL_INTERVAL = 3000;
+
+  pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`${MEDIAMTX_API}/v3/paths/list`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const items = data.items || [];
+      const config = getConfig();
+      const rtmpPath = config.rtmpPath || 'live';
+
+      // Find any path that starts with the configured RTMP path and has an active source
+      const activePath = items.find(p =>
+        p.name && p.name.startsWith(rtmpPath) && p.source && p.source.type
+      );
+
+      if (activePath) {
+        if (state !== 'active') {
+          handleStreamEvent('start', activePath.name);
+        }
+      } else {
+        if (state === 'active') {
+          handleStreamEvent('stop', currentPath);
+        }
+      }
+    } catch {
+      // MediaMTX not ready yet, ignore
+    }
+  }, POLL_INTERVAL);
+
+  console.log('Stream polling started (every 3s)');
+}
+
+export function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 }
 
 export function handleStreamEvent(event, path) {

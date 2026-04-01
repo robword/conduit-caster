@@ -10,7 +10,7 @@ import authRoutes from './routes/auth.js';
 import webhookRoutes from './routes/webhook.js';
 import streamRoutes from './routes/stream.js';
 import { initWebSocket } from './services/websocketService.js';
-import { setCallbacks as setStreamCallbacks } from './services/streamMonitor.js';
+import { setCallbacks as setStreamCallbacks, startPolling as startStreamPolling } from './services/streamMonitor.js';
 import { startDiscovery } from './services/discoveryService.js';
 import { startCasting, stopCasting, resetStates, cancelGracePeriod } from './services/castManager.js';
 import devicesRoutes from './routes/devices.js';
@@ -129,6 +129,9 @@ async function start() {
 
   // Start device discovery
   startDiscovery();
+
+  // Poll MediaMTX for stream status (webhook curl not available in scratch image)
+  startStreamPolling();
 
   server.listen(PORT, () => {
     console.log(`Conduit Caster backend listening on port ${PORT}`);

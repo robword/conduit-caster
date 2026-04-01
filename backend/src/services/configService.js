@@ -87,7 +87,7 @@ rtmpAddress: :1935
 hls: yes
 hlsAddress: :8888
 hlsAlwaysRemux: yes
-hlsSegmentCount: 3
+hlsSegmentCount: 7
 hlsSegmentDuration: 1s
 
 paths:
