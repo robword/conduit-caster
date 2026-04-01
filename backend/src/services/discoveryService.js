@@ -1,7 +1,7 @@
 import { broadcast } from './websocketService.js';
 import { getConfig, saveConfig } from './configService.js';
 import { v4 as uuidv4 } from 'uuid';
-import Bonjour from 'bonjour-service';
+import { Bonjour } from 'bonjour-service';
 
 let discoveryInterval = null;
 let bonjourInstance = null;
@@ -30,27 +30,32 @@ export function stopDiscovery() {
 }
 
 export async function discoverNow() {
-  return new Promise((resolve) => {
-    const bonjour = getBonjourInstance();
-    const devices = [];
+  try {
+    return await new Promise((resolve) => {
+      const bonjour = getBonjourInstance();
+      const devices = [];
 
-    const browser = bonjour.find({ type: 'googlecast', protocol: 'tcp' }, (service) => {
-      // Extract IPv4 address
-      const ip = service.addresses?.find(a => a.match(/^\d+\.\d+\.\d+\.\d+$/));
-      if (ip) {
-        const name = service.txt?.fn || service.name || 'Chromecast';
-        devices.push({ name, ip });
-      }
+      const browser = bonjour.find({ type: 'googlecast', protocol: 'tcp' }, (service) => {
+        // Extract IPv4 address
+        const ip = service.addresses?.find(a => a.match(/^\d+\.\d+\.\d+\.\d+$/));
+        if (ip) {
+          const name = service.txt?.fn || service.name || 'Chromecast';
+          devices.push({ name, ip });
+        }
+      });
+
+      // Give discovery 8 seconds to find devices
+      setTimeout(() => {
+        browser.stop();
+        mergeDiscoveredDevices(devices);
+        console.log(`Discovery found ${devices.length} device(s)`);
+        resolve(devices);
+      }, 8000);
     });
-
-    // Give discovery 8 seconds to find devices
-    setTimeout(() => {
-      browser.stop();
-      mergeDiscoveredDevices(devices);
-      console.log(`Discovery found ${devices.length} device(s)`);
-      resolve(devices);
-    }, 8000);
-  });
+  } catch (err) {
+    console.warn('mDNS discovery error:', err.message);
+    return [];
+  }
 }
 
 function mergeDiscoveredDevices(discovered) {
