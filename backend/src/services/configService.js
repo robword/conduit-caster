@@ -80,7 +80,15 @@ export function writeMediamtxConfig(lanIp) {
   const cfg = getConfig();
   const yaml = `api: yes
 apiAddress: :9997
-authInternalUsers: []
+authInternalUsers:
+  - user: any
+    pass: ''
+    ips: []
+    permissions:
+      - action: api
+      - action: publish
+      - action: read
+      - action: playback
 
 rtmp: yes
 rtmpAddress: :1935
@@ -92,15 +100,7 @@ hlsSegmentCount: 7
 hlsSegmentDuration: 1s
 
 paths:
-  ~^${cfg.rtmpPath}:
-    runOnReady: >
-      curl -sf -X POST http://backend:3000/api/webhook/stream
-      -H 'Content-Type: application/json'
-      -d '{"event":"start","path":"$MTX_PATH"}'
-    runOnNotReady: >
-      curl -sf -X POST http://backend:3000/api/webhook/stream
-      -H 'Content-Type: application/json'
-      -d '{"event":"stop","path":"$MTX_PATH"}'
+  ~^${cfg.rtmpPath}: {}
 `;
   atomicWrite(join(CONFIG_DIR, 'mediamtx.yml'), yaml);
 }

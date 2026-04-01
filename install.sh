@@ -276,27 +276,30 @@ chmod 700 data
 LAN_IP=$(ip route get 1 2>/dev/null | grep -oP 'src \K\S+' || hostname -I | awk '{print $1}')
 
 if [[ ! -f config/mediamtx.yml ]]; then
-  cat > config/mediamtx.yml <<MTXEOF
+  cat > config/mediamtx.yml <<'MTXEOF'
 api: yes
 apiAddress: :9997
-authInternalUsers: []
+authInternalUsers:
+  - user: any
+    pass: ''
+    ips: []
+    permissions:
+      - action: api
+      - action: publish
+      - action: read
+      - action: playback
+
 rtmp: yes
 rtmpAddress: :1935
+
 hls: yes
 hlsAddress: :8888
 hlsAlwaysRemux: yes
 hlsSegmentCount: 7
 hlsSegmentDuration: 1s
+
 paths:
-  ~^live:
-    runOnReady: >
-      curl -sf -X POST http://backend:3000/api/webhook/stream
-      -H 'Content-Type: application/json'
-      -d '{"event":"start","path":"\$MTX_PATH"}'
-    runOnNotReady: >
-      curl -sf -X POST http://backend:3000/api/webhook/stream
-      -H 'Content-Type: application/json'
-      -d '{"event":"stop","path":"\$MTX_PATH"}'
+  ~^live: {}
 MTXEOF
   info "Created bootstrap mediamtx.yml"
 fi
