@@ -80,6 +80,7 @@ export function writeMediamtxConfig(lanIp) {
   const cfg = getConfig();
   const yaml = `api: yes
 apiAddress: :9997
+authInternalUsers: []
 
 rtmp: yes
 rtmpAddress: :1935

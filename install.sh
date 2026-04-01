@@ -279,6 +279,7 @@ if [[ ! -f config/mediamtx.yml ]]; then
   cat > config/mediamtx.yml <<MTXEOF
 api: yes
 apiAddress: :9997
+authInternalUsers: []
 rtmp: yes
 rtmpAddress: :1935
 hls: yes
