@@ -263,6 +263,48 @@ mkdir -p config data
 chown "$USER:$USER" config data
 chmod 700 data
 
+# Bootstrap config files so Docker can mount them as files (not directories)
+LAN_IP=$(ip route get 1 2>/dev/null | grep -oP 'src \K\S+' || hostname -I | awk '{print $1}')
+
+if [[ ! -f config/mediamtx.yml ]]; then
+  cat > config/mediamtx.yml <<MTXEOF
+api: yes
+apiAddress: :8888
+rtmp: yes
+rtmpAddress: :1935
+hls: yes
+hlsAddress: :8888
+hlsAlwaysRemux: yes
+hlsSegmentCount: 3
+hlsSegmentDuration: 1s
+paths:
+  live:
+    runOnReady: >
+      curl -sf -X POST http://backend:3000/api/webhook/stream
+      -H 'Content-Type: application/json'
+      -d '{"event":"start","path":"\$MTX_PATH"}'
+    runOnNotReady: >
+      curl -sf -X POST http://backend:3000/api/webhook/stream
+      -H 'Content-Type: application/json'
+      -d '{"event":"stop","path":"\$MTX_PATH"}'
+MTXEOF
+  info "Created bootstrap mediamtx.yml"
+fi
+
+if [[ ! -f config/go2rtc.yaml ]]; then
+  cat > config/go2rtc.yaml <<G2REOF
+api:
+  listen: :1984
+streams:
+  live: http://mediamtx:8888/live/index.m3u8
+webrtc:
+  listen: :8555
+  candidates:
+    - ${LAN_IP:-127.0.0.1}:8555
+G2REOF
+  info "Created bootstrap go2rtc.yaml"
+fi
+
 info "Directories configured"
 
 echo ""
