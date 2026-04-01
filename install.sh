@@ -207,11 +207,14 @@ if [[ "$DEV_MODE" == true ]]; then
 else
   # Try release tarball first, fall back to git clone
   if [[ -z "$VERSION" ]]; then
-    VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/' || true)
+    RELEASE_JSON=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null || true)
+    if echo "$RELEASE_JSON" | grep -q '"tag_name"'; then
+      VERSION=$(echo "$RELEASE_JSON" | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"v?([^"]+)".*/\1/')
+    fi
   fi
 
   FETCHED=false
-  if [[ -n "$VERSION" ]]; then
+  if [[ -n "$VERSION" && "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
     echo "Downloading release v${VERSION}..."
     TARBALL_URL="https://github.com/$REPO/releases/download/v${VERSION}/conduit-caster-${VERSION}.tar.gz"
     mkdir -p "$INSTALL_DIR"
