@@ -1,0 +1,65 @@
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:1.9.1@sha256:DIGEST_HERE
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:1935:1935"
+      - "0.0.0.0:8888:8888"
+    volumes:
+      - ./config/mediamtx.yml:/mediamtx.yml:ro
+    networks:
+      - conduit-caster
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8888/v3/paths/list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  go2rtc:
+    image: alexxit/go2rtc:1.9.4@sha256:DIGEST_HERE
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:8555:8555"
+    volumes:
+      - ./config/go2rtc.yaml:/config/go2rtc.yaml:ro
+    networks:
+      - conduit-caster
+    depends_on:
+      mediamtx:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: ghcr.io/org/conduit-caster:${APP_VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MEDIAMTX_API_URL=http://mediamtx:8888
+      - GO2RTC_API_URL=http://go2rtc:1984
+      - GO2RTC_ICE_PORT=8555
+      - DATA_DIR=/data
+      - CONFIG_DIR=/config
+    volumes:
+      - ./data:/data
+      - ./config:/config
+    networks:
+      - conduit-caster
+    depends_on:
+      mediamtx:
+        condition: service_healthy
+      go2rtc:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  conduit-caster:
+    driver: bridge

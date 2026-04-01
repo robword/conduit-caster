@@ -1,0 +1,16 @@
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    volumes:
+      - ./data/tailscale:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - TS_AUTHKEY_FILE=/var/lib/tailscale/authkey
+      - TS_SERVE_CONFIG=/var/lib/tailscale/serve.json
+      - TS_STATE_DIR=/var/lib/tailscale
+    networks:
+      - conduit-caster

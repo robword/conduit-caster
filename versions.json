@@ -1,0 +1,8 @@
+{
+  "app": "1.0.0",
+  "mediamtx": "1.9.1",
+  "mediamtxDigest": "sha256:DIGEST_HERE",
+  "go2rtc": "1.9.4",
+  "go2rtcDigest": "sha256:DIGEST_HERE",
+  "node": "20"
+}
