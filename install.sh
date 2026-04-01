@@ -259,6 +259,15 @@ if [[ ! -f .env ]]; then
   info "Created .env from .env.example"
 fi
 
+# Set HOST_IP in .env so the backend knows the real LAN IP (not Docker bridge)
+LAN_IP=$(ip route get 1 2>/dev/null | grep -oP 'src \K\S+' || hostname -I | awk '{print $1}')
+if grep -q '^HOST_IP=' .env; then
+  sed -i "s/^HOST_IP=.*/HOST_IP=${LAN_IP}/" .env
+else
+  echo "HOST_IP=${LAN_IP}" >> .env
+fi
+info "Host IP: ${LAN_IP}"
+
 mkdir -p config data
 chown "$USER:$USER" config data
 chmod 700 data

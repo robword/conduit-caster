@@ -34,6 +34,7 @@ services:
     ports:
       - "0.0.0.0:3000:3000"
     environment:
+      - HOST_IP=${HOST_IP:-}
       - NODE_ENV=production
       - PORT=3000
       - MEDIAMTX_API_URL=http://mediamtx:9997

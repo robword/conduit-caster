@@ -1,19 +1,16 @@
 import { broadcast } from './websocketService.js';
 import { getConfig, saveConfig } from './configService.js';
 import { v4 as uuidv4 } from 'uuid';
+import Bonjour from 'bonjour-service';
 
 let discoveryInterval = null;
-let Client;
+let bonjourInstance = null;
 
-// Lazy-load castv2-client (may not be available in all environments)
-async function loadCastv2() {
-  if (Client) return;
-  try {
-    const mod = await import('castv2-client');
-    Client = mod.Client;
-  } catch {
-    console.warn('castv2-client not available — mDNS discovery disabled');
+function getBonjourInstance() {
+  if (!bonjourInstance) {
+    bonjourInstance = new Bonjour();
   }
+  return bonjourInstance;
 }
 
 export function startDiscovery() {
@@ -33,53 +30,27 @@ export function stopDiscovery() {
 }
 
 export async function discoverNow() {
-  await loadCastv2();
+  return new Promise((resolve) => {
+    const bonjour = getBonjourInstance();
+    const devices = [];
 
-  // Use mdns-based discovery if available
-  try {
-    const mdns = await import('mdns');
-    return discoverViaMdns(mdns.default || mdns);
-  } catch {
-    // mdns not available — try dns-sd or bonjour alternatives
-  }
+    const browser = bonjour.find({ type: 'googlecast', protocol: 'tcp' }, (service) => {
+      // Extract IPv4 address
+      const ip = service.addresses?.find(a => a.match(/^\d+\.\d+\.\d+\.\d+$/));
+      if (ip) {
+        const name = service.txt?.fn || service.name || 'Chromecast';
+        devices.push({ name, ip });
+      }
+    });
 
-  try {
-    const { exec } = await import('child_process');
-    const { promisify } = await import('util');
-    const execAsync = promisify(exec);
-
-    // Try avahi-browse on Linux
-    const { stdout } = await execAsync(
-      'avahi-browse _googlecast._tcp --resolve --parsable --terminate 2>/dev/null',
-      { timeout: 10000 }
-    );
-
-    const devices = parseAvahiBrowse(stdout);
-    mergeDiscoveredDevices(devices);
-    return devices;
-  } catch {
-    console.warn('mDNS discovery failed — add devices manually via API');
-    return [];
-  }
-}
-
-function parseAvahiBrowse(output) {
-  const devices = [];
-  const lines = output.split('\n').filter(l => l.startsWith('='));
-
-  for (const line of lines) {
-    const parts = line.split(';');
-    if (parts.length < 8) continue;
-
-    const name = parts[3];
-    const ip = parts[7];
-
-    if (ip && !ip.includes(':')) { // IPv4 only
-      devices.push({ name, ip });
-    }
-  }
-
-  return devices;
+    // Give discovery 8 seconds to find devices
+    setTimeout(() => {
+      browser.stop();
+      mergeDiscoveredDevices(devices);
+      console.log(`Discovery found ${devices.length} device(s)`);
+      resolve(devices);
+    }, 8000);
+  });
 }
 
 function mergeDiscoveredDevices(discovered) {
