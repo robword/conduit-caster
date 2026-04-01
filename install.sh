@@ -349,17 +349,15 @@ LAN_IP=$(ip route get 1 2>/dev/null | grep -oP 'src \K\S+' || hostname -I | awk 
 
 VERSION_DISPLAY=$(cat VERSION 2>/dev/null || echo "dev")
 
-cat <<SUMMARY
-
-${GREEN}✓ Conduit Caster v${VERSION_DISPLAY} is running!${NC}
-
-  Web UI:      http://${LAN_IP}:3000
-  RTMP input:  rtmp://${LAN_IP}:1935/live
-
-Point your ATEM Mini Pro RTMP output to the address above.
-Open the Web UI to complete first-run setup.
-
-Optional Tailscale:
-  docker compose -f docker-compose.yml -f docker-compose.tailscale.yml up -d
-
-SUMMARY
+echo ""
+info "Conduit Caster v${VERSION_DISPLAY} is running!"
+echo ""
+echo "  Web UI:      http://${LAN_IP}:3000"
+echo "  RTMP input:  rtmp://${LAN_IP}:1935/live"
+echo ""
+echo "Point your ATEM Mini Pro RTMP output to the address above."
+echo "Open the Web UI to complete first-run setup."
+echo ""
+echo "Optional Tailscale:"
+echo "  docker compose -f docker-compose.yml -f docker-compose.tailscale.yml up -d"
+echo ""
