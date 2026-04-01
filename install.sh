@@ -269,7 +269,7 @@ LAN_IP=$(ip route get 1 2>/dev/null | grep -oP 'src \K\S+' || hostname -I | awk 
 if [[ ! -f config/mediamtx.yml ]]; then
   cat > config/mediamtx.yml <<MTXEOF
 api: yes
-apiAddress: :8888
+apiAddress: :9997
 rtmp: yes
 rtmpAddress: :1935
 hls: yes

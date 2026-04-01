@@ -79,7 +79,7 @@ export function writeMediamtxConfig(lanIp) {
   ensureDir(CONFIG_DIR);
   const cfg = getConfig();
   const yaml = `api: yes
-apiAddress: :8888
+apiAddress: :9997
 
 rtmp: yes
 rtmpAddress: :1935
@@ -127,7 +127,7 @@ ${candidates.join('\n')}
 }
 
 export async function reloadMediamtx() {
-  const url = process.env.MEDIAMTX_API_URL || 'http://mediamtx:8888';
+  const url = process.env.MEDIAMTX_API_URL || 'http://mediamtx:9997';
   try {
     await fetch(`${url}/v3/config/global/patch`, {
       method: 'POST',

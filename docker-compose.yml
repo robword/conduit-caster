@@ -10,7 +10,7 @@ services:
     networks:
       - conduit-caster
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8888/v3/paths/list"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:9997/v3/paths/list"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,7 +39,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - MEDIAMTX_API_URL=http://mediamtx:8888
+      - MEDIAMTX_API_URL=http://mediamtx:9997
       - GO2RTC_API_URL=http://go2rtc:1984
       - GO2RTC_ICE_PORT=8555
       - DATA_DIR=/data
