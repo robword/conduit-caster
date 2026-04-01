@@ -113,7 +113,7 @@ if [[ "$SKIP_DOCKER" == false ]]; then
   # Add user to docker group
   if ! groups | grep -q docker; then
     sudo usermod -aG docker "$USER"
-    warn "Added $USER to docker group. You may need to log out and back in."
+    info "Added $USER to docker group"
   fi
 
   # Ensure Docker is enabled and running
@@ -121,12 +121,18 @@ if [[ "$SKIP_DOCKER" == false ]]; then
   sudo systemctl start docker
 
   # Check for Compose plugin
-  if ! docker compose version &>/dev/null; then
+  if ! docker compose version &>/dev/null && ! sudo docker compose version &>/dev/null; then
     error "Docker Compose plugin not found. Install it: sudo apt-get install docker-compose-plugin"
   fi
-  info "Docker Compose: $(docker compose version --short)"
+  info "Docker Compose: $(docker compose version --short 2>/dev/null || sudo docker compose version --short)"
 else
   info "Skipping Docker install"
+fi
+
+# Use sudo for docker commands if current session doesn't have docker group access
+DOCKER="docker"
+if ! docker info &>/dev/null 2>&1; then
+  DOCKER="sudo docker"
 fi
 
 echo ""
@@ -263,15 +269,15 @@ if [[ "$NO_START" == true ]]; then
   info "Installation complete (--no-start specified)"
 else
   echo "Pulling Docker images..."
-  docker compose pull 2>/dev/null || true
+  $DOCKER compose pull 2>/dev/null || true
 
   if [[ "$DEV_MODE" == true ]]; then
     echo "Building backend image (dev mode)..."
-    docker compose build
+    $DOCKER compose build
   fi
 
   echo "Starting services..."
-  docker compose up -d
+  $DOCKER compose up -d
 
   # Health check poll
   echo "Waiting for backend to be ready..."
